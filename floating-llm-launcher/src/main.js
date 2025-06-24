@@ -4,7 +4,14 @@ const path = require('path');
 let mainWindow;
 let trayIcon;
 let webviewWindow;
-const DEFAULT_LLM_URL = 'https://claude.ai';
+let currentLLMUrl = 'https://chatgpt.com';
+
+// LLM service URLs
+const LLM_URLS = {
+  claude: 'https://claude.ai',
+  chatgpt: 'https://chatgpt.com',
+  gemini: 'https://gemini.google.com'
+};
 
 // Keep a global reference to prevent garbage collection
 let floatingWindow;
@@ -61,6 +68,12 @@ function createFloatingWindow() {
   
   ipcMain.on('open-llm', () => {
     createWebviewWindow();
+  });
+
+  // Handle LLM URL changes
+  ipcMain.on('llm-url-changed', (event, url) => {
+    currentLLMUrl = url;
+    console.log('LLM URL changed to:', url);
   });
 
   ipcMain.on('show-context-menu', (event, x, y) => {
@@ -122,7 +135,7 @@ function createWebviewWindow() {
     return;
   }
 
-  // Create the webview window
+  // Create the webview window with custom title bar
   webviewWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -130,19 +143,20 @@ function createWebviewWindow() {
     minHeight: 600,
     show: false,
     alwaysOnTop: true,
+    titleBarStyle: 'hiddenInset',
     icon: path.join(__dirname, 'assets', 'icon.png'),
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
+      nodeIntegration: true,
+      contextIsolation: false,
       webSecurity: true,
       allowRunningInsecureContent: false,
+      webviewTag: true,
       experimentalFeatures: false
     }
   });
 
-
-  // Load the LLM URL directly
-  webviewWindow.loadURL(DEFAULT_LLM_URL);
+  // Load the custom LLM window with dropdown
+  webviewWindow.loadFile(path.join(__dirname, 'renderer', 'llm-window.html'));
 
   // Show window when ready
   webviewWindow.once('ready-to-show', () => {
