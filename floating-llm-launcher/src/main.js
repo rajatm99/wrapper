@@ -98,14 +98,26 @@ function createFloatingWindow() {
 }
 
 function createWebviewWindow() {
-  // If window already exists, toggle its visibility
+  // If window already exists, move it to current desktop
   if (webviewWindow) {
     if (webviewWindow.isVisible() && !webviewWindow.isMinimized()) {
       webviewWindow.minimize();
     } else {
-      webviewWindow.restore();
-      webviewWindow.show();
-      webviewWindow.focus();
+      // Move window to current desktop by setting it visible on all workspaces temporarily
+      if (process.platform === 'darwin') {
+        webviewWindow.setVisibleOnAllWorkspaces(true);
+        webviewWindow.restore();
+        webviewWindow.show();
+        webviewWindow.focus();
+        // Remove from all workspaces after showing - now it stays on current desktop
+        setTimeout(() => {
+          webviewWindow.setVisibleOnAllWorkspaces(false);
+        }, 100);
+      } else {
+        webviewWindow.restore();
+        webviewWindow.show();
+        webviewWindow.focus();
+      }
     }
     return;
   }
@@ -127,6 +139,7 @@ function createWebviewWindow() {
       experimentalFeatures: false
     }
   });
+
 
   // Load the LLM URL directly
   webviewWindow.loadURL(DEFAULT_LLM_URL);
